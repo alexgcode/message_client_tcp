@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -22,7 +23,10 @@ namespace message_client
                 int receive = socket.Receive(buffer, 0, buffer.Length, 0);
                 Array.Resize(ref buffer, receive);
 
-                Console.WriteLine(Encoding.Default.GetString(buffer));
+                string rawMessage = Encoding.UTF8.GetString(buffer, 0, receive);
+                Message msg = JsonConvert.DeserializeObject<Message>(rawMessage);
+
+                Console.WriteLine(msg.data);
             }
         }
 
@@ -40,10 +44,26 @@ namespace message_client
             listener.Start();
 
             string userName = Console.ReadLine();
+            string number = Console.ReadLine();
+
+            Message firstMSG = new Message();
+            firstMSG.senderNumber = number;
+            firstMSG.username = userName;
+            string firstJsonString = JsonConvert.SerializeObject(firstMSG, Formatting.Indented);
+            byte[] firstData = Encoding.Default.GetBytes(firstJsonString);
+            socket.Send(firstData, 0, firstData.Length, 0);
 
             while (true)
             {
-                byte[] SendDataToServer = Encoding.Default.GetBytes("<"+ userName + ">: " + Console.ReadLine());
+                Message message = new Message();
+                message.senderNumber = number;
+                message.username = userName;
+                message.targetNumber = Console.ReadLine();
+                message.data = Console.ReadLine();  //message
+
+                string jsonString = JsonConvert.SerializeObject(message, Formatting.Indented);
+
+                byte[] SendDataToServer = Encoding.Default.GetBytes(jsonString);
                 socket.Send(SendDataToServer, 0, SendDataToServer.Length, 0);
             }
         }
